@@ -1,4 +1,4 @@
-# Client Lifetime Value (CLV) Prediction Engine v2
+# Client Lifetime Value (CLV) Prediction Engine
 
 A production-grade Machine Learning microservice that forecasts long-term enterprise account monetary value, detects high-probability upsell opportunities, dynamically schedules optimal cross-sell pitch dates, and delivers Explainable AI (XAI) insights via SHAP.
 
