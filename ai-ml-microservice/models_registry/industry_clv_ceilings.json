@@ -1,0 +1,15 @@
+{
+  "ceilings": {
+    "E-commerce": 34.17273039804862,
+    "Education": 14.605466059784751,
+    "Finance": 22.609153041120866,
+    "Healthcare": 18.86470341716189,
+    "Hospitality": 17.20845731286611,
+    "Logistics & Supply Chain": 23.829596601859336,
+    "Manufacturing": 14.211173296874062,
+    "Real Estate": 16.33383165481767,
+    "Retail": 26.287193367155435,
+    "Technology": 28.43743652572776
+  },
+  "training_engagement_avg": 65.81692187499999
+}

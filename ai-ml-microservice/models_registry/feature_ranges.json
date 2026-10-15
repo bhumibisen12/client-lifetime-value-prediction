@@ -1,0 +1,30 @@
+{
+  "historical_spend_amount": {
+    "p01": 500.0,
+    "p99": 53282.9572
+  },
+  "purchase_frequency_yearly": {
+    "p01": 1.0,
+    "p99": 22.0
+  },
+  "rolling_engagement_score": {
+    "p01": 30.3891,
+    "p99": 100.0
+  },
+  "contract_tenure_months": {
+    "p01": 15.0,
+    "p99": 68.0
+  },
+  "spend_per_tenure_year": {
+    "p01": 122.44897959183675,
+    "p99": 25516.53013333327
+  },
+  "spend_velocity": {
+    "p01": 10.204081632653061,
+    "p99": 2126.3775111111063
+  },
+  "engagement_x_tenure": {
+    "p01": 749.3242999999999,
+    "p99": 5876.5951999999825
+  }
+}
