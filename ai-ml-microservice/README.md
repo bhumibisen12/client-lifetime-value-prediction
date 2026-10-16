@@ -73,9 +73,9 @@ The microservice follows a decoupled pipeline from request validation to feature
 
 ```mermaid
 flowchart TD
-    A["Client / Frontend Request (JSON)"] --> B["Pydantic v2 Validation (clv_schemas.py)"]
+    A["Client / Frontend Request (JSON)"] --> B["Pydantic v2 Validation (app/clv_schemas.py)"]
     B -->|Invalid Data / Future Date| ERR["HTTP 422 Unprocessable Entity"]
-    B -->|Valid Payload| C["Feature Store (feature_store.py)"]
+    B -->|Valid Payload| C["Feature Store (pipelines/feature_store.py)"]
     
     subgraph Feature Engineering
         C --> C1["Derive Spend Velocity"]
@@ -104,7 +104,7 @@ flowchart TD
     M --> N["Calculate Specific Pitch Date & Confidence"]
     
     G & I & K & L & N --> O["Assemble CLVOutputPayload"]
-    O --> P[("SQLite Persistence Layer (db.py)")]
+    O --> P[("SQLite Persistence Layer (database/db.py)")]
     O --> Q["REST API Response (JSON) / CLI Terminal UI"]
 ```
 
@@ -112,7 +112,7 @@ flowchart TD
 
 ## 3. Input Parameters
 
-Predictions require **7 account parameters**. The schema is strictly validated by Pydantic v2 in [`app/clv_schemas.py`](file:///d:/client_lifetime_value_prediction_1/ai-ml-microservice/app/clv_schemas.py).
+Predictions require **7 account parameters**. The schema is strictly validated by Pydantic v2 in [`app/clv_schemas.py`](app/clv_schemas.py).
 
 | Field Name | Type | Constraints & Rules | Sample Value | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -227,7 +227,7 @@ The engine returns a structured JSON payload divided into 3 major sections: **Co
   - Secondary model predicting binary upsell readiness (`0` or `1`).
   - Output probability represents `upsell_confidence_score`.
 
-### 5.2 Feature Engineering Formulas ([`pipelines/feature_store.py`](file:///d:/client_lifetime_value_prediction_1/ai-ml-microservice/pipelines/feature_store.py))
+### 5.2 Feature Engineering Formulas ([`pipelines/feature_store.py`](pipelines/feature_store.py))
 To prevent train/serve skew, both training and production inference import feature logic from `feature_store.py`:
 $$\text{Spend Velocity} = \frac{\text{historical\_spend\_amount}}{\max(\text{contract\_tenure\_months}, 1)}$$
 
@@ -541,7 +541,7 @@ To allow a frontend on another computer on the local network (LAN) to connect:
    ```bash
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
-2. **CORS Policy**: Configured in [`main.py`](file:///d:/client_lifetime_value_prediction_1/ai-ml-microservice/main.py#L42-L49) with `CORSMiddleware` (`allow_origins=["*"]`) to prevent browser cross-origin blocks.
+2. **CORS Policy**: Configured in [`main.py`](main.py) with `CORSMiddleware` (`allow_origins=["*"]`) to prevent browser cross-origin blocks.
 3. **Endpoint URL**: The frontend should replace `localhost` with the ML host machine's LAN IP:
    ```javascript
    // Replace with actual IP of the machine running the ML microservice
@@ -622,7 +622,7 @@ print(f"Upsell: {data['expansion_analytics']['recommended_target_product']}")
   - `httpx>=0.27.0`
   - `pytest>=8.2.0`
 
-### 7.2 Environment Configuration ([`app/config.py`](file:///d:/client_lifetime_value_prediction_1/ai-ml-microservice/app/config.py))
+### 7.2 Environment Configuration ([`app/config.py`](app/config.py))
 Configurable via system environment variables without code modification:
 
 | Variable | Default | Purpose |
@@ -639,7 +639,8 @@ Configurable via system environment variables without code modification:
 
 #### 1. Clone & Set Up Virtual Environment
 ```bash
-cd "d:\client_lifetime_value_prediction_1\ai-ml-microservice"
+# Ensure you are inside the ai-ml-microservice directory
+cd ai-ml-microservice
 python -m venv venv
 # Windows:
 venv\Scripts\activate
@@ -713,7 +714,7 @@ When invalid inputs are entered interactively into `clv_cli.py`, the CLI traps t
 
 ## 9. Testing & Quality Assurance
 
-The project contains automated unit and integration tests under [`tests/`](file:///d:/client_lifetime_value_prediction_1/ai-ml-microservice/tests/) verifying mathematical consistency, schema integrity, and boundary conditions.
+The project contains automated unit and integration tests under [`tests/`](tests/) verifying mathematical consistency, schema integrity, and boundary conditions.
 
 ### 9.1 Running the Test Suite
 ```bash
