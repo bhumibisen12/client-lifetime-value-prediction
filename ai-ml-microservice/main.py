@@ -72,3 +72,9 @@ def health_check() -> dict:
         "service": "CLV Prediction Engine",
         "version": "2.0.0",
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
