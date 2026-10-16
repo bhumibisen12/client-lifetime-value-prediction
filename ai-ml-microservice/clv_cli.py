@@ -350,7 +350,7 @@ def cmd_status() -> None:
             r = httpx.get("http://127.0.0.1:8000/health", timeout=3)
             info = r.json()
             console.print(Panel(
-                f"[bold green]● API is running[/bold green]\n\n"
+                f"[bold green][ONLINE] API is running[/bold green]\n\n"
                 f"Service : {info.get('service', 'CLV Engine')}\n"
                 f"Version : {info.get('version', '—')}\n"
                 f"Endpoint: [cyan]http://127.0.0.1:8000[/cyan]\n"
@@ -359,10 +359,10 @@ def cmd_status() -> None:
                 border_style="green",
             ))
         except Exception:
-            console.print("[bold green]● API is running[/bold green]")
+            console.print("[bold green][ONLINE] API is running[/bold green]")
     else:
         console.print(Panel(
-            "[bold red]● API is not running[/bold red]\n\n"
+            "[bold red][OFFLINE] API is not running[/bold red]\n\n"
             "Start with:\n  [yellow]uvicorn main:app --reload[/yellow]",
             title="API Status",
             border_style="red",
@@ -476,7 +476,7 @@ def cmd_predict(file: Optional[str] = None, as_json: bool = False) -> None:
                     for item in detail:
                         loc = " -> ".join(str(x) for x in item.get("loc", []))
                         msg = item.get("msg", "")
-                        lines.append(f"• [bold]{loc}[/bold]: {msg}")
+                        lines.append(f"- [bold]{loc}[/bold]: {msg}")
                     error_msg = "\n".join(lines)
                 else:
                     error_msg = str(detail)
