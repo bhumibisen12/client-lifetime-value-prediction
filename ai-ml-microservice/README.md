@@ -1,142 +1,238 @@
 # Client Lifetime Value (CLV) Prediction Engine v2
 
-A production-grade Machine Learning microservice that forecasts long-term enterprise account monetary value, detects high-probability upsell opportunities, dynamically schedules optimal cross-sell pitch dates, and delivers Explainable AI (XAI) insights via SHAP.
+A production-ready machine learning microservice that predicts the long-term monetary value (CLV in INR) of enterprise B2B accounts, detects binary upsell expansion signals using machine learning, and calculates dynamic, personalized cross-sell pitch windows with Explainable AI (SHAP).
+
+---
+
+## ⚡ Quick Start: Installation & How to Run
+
+Get the microservice and terminal interface running locally in under 2 minutes:
+
+### 1. Prerequisites
+* **Python 3.10+** (tested on Python 3.12)
+* Terminal: PowerShell (Windows) or Bash/Zsh (Linux/macOS)
+
+### 2. Navigate & Set Up Virtual Environment
+Open your terminal and navigate to the microservice directory:
+
+```bash
+cd "d:/client_lifetime_value_prediction_1/ai-ml-microservice"
+```
+
+Create and activate a virtual environment:
+```powershell
+# Windows (PowerShell):
+python -m venv venv
+.\venv\Scripts\activate
+
+# Linux / macOS:
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Start the API Server
+All pre-trained model artifacts are already included in `models_registry/`. Launch the FastAPI server:
+
+```bash
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+* **Interactive Swagger UI**: [`http://127.0.0.1:8000/docs`](http://127.0.0.1:8000/docs)
+* **Interactive ReDoc UI**: [`http://127.0.0.1:8000/redoc`](http://127.0.0.1:8000/redoc)
+* **Liveness Probe**: [`http://127.0.0.1:8000/health`](http://127.0.0.1:8000/health)
+
+### 5. Interact via Production CLI
+Open a **second terminal** (keep the API server running in the first), activate the virtual environment, and run:
+
+```bash
+# Check API connection status:
+python clv_cli.py status
+
+# Run an interactive single-account prediction prompt:
+python clv_cli.py predict
+
+# View the executive portfolio dashboard:
+python clv_cli.py dashboard
+
+# View audit history for an account:
+python clv_cli.py history client-tech-001
+```
+
+### 6. Run the Visual Presentation Demo
+To see the engine evaluate 6 diverse enterprise client scenarios across Technology, Finance, Healthcare, Retail, and Logistics:
+
+```bash
+python demo_terminal.py
+```
+
+### 7. Run the Full Test Suite
+Verify that all 37 mathematical constraints, edge cases, and business guardrails pass:
+
+```bash
+python -m pytest tests/ -v
+```
 
 ---
 
 ## 📑 Table of Contents
 
-1. [Model Overview](#1-model-overview)
-2. [Workflow & Architecture](#2-workflow--architecture)
-3. [Input Parameters](#3-input-parameters)
-4. [Output Parameters](#4-output-parameters)
-5. [Technical Implementation & Algorithms](#5-technical-implementation--algorithms)
-6. [API & Integration Details](#6-api--integration-details)
-7. [Dependencies & Setup](#7-dependencies--setup)
-8. [Error Handling & Validation](#8-error-handling--validation)
-9. [Testing & Quality Assurance](#9-testing--quality-assurance)
-10. [Limitations & Future Improvements](#10-limitations--future-improvements)
+1. [Quick Start: Installation & How to Run](#-quick-start-installation--how-to-run)
+2. [Model Overview](#1-model-overview)
+3. [Workflow](#2-workflow)
+4. [Input Parameters](#3-input-parameters)
+5. [Output Parameters](#4-output-parameters)
+6. [Technical Implementation](#5-technical-implementation)
+7. [API & Integration Details](#6-api--integration-details)
+8. [Configuration & Environment Variables](#7-configuration--environment-variables)
+9. [Error Handling](#8-error-handling)
+10. [Testing](#9-testing)
+11. [Limitations & Future Improvements](#10-limitations--future-improvements)
 
 ---
 
 ## 1. Model Overview
 
-### 1.1 Purpose & Objectives
-The **Client Lifetime Value (CLV) Prediction Engine** (Detagenix Module 8) is an enterprise B2B machine learning service designed to help sales leaders, account executives, and revenue operations teams prioritize accounts based on projected lifetime revenue. 
+### Purpose & Objectives
+The **Client Lifetime Value (CLV) Prediction Engine v2** (Module 8 of the Detagenix Platform) provides predictive intelligence for enterprise B2B account retention and expansion. The engine solves three core operational challenges:
+1. **Quantitative Revenue Forecasting**: Estimates the total future monetary value of an account over its active lifecycle in Indian Rupees (INR).
+2. **Expansion Targeting (Upsell)**: Determines whether an account is ready for higher-tier upgrades using a trained machine learning classifier combined with engagement and tenure sanity gates.
+3. **Dynamic Cross-Sell Scheduling**: Identifies high-value accounts eligible for complementary product modules and dynamically schedules an optimal pitch date based on account health, purchase cadence, and contract renewal timing.
 
-Unlike simple linear multipliers or rule-based heuristics, this engine couples gradient-boosted tree models with statistical guardrails and explainability techniques:
-- **Quantitative Lifetime Value**: Forecasts total lifetime monetary spend in INR per account.
-- **Upsell Intelligence**: Identifies when an account is primed for an upgrade tier using an ML classifier.
-- **Dynamic Cross-Sell Timing**: Determines a personalized, calendar-specific pitch window rather than a static 30-day offset.
-- **Explainable AI (XAI)**: Generates human-readable, transparent rationale for every forecast using SHAP (SHapley Additive exPlanations).
+### Core Philosophy
+* **Zero Large Language Model (LLM) Dependency**: Pure classical and ensemble machine learning (`XGBoost`, `scikit-learn`, `SHAP`). Deterministic, reproducible, fast (sub-50ms inference), and free from generative hallucinations.
+* **Explainable AI (XAI) First**: Every prediction provides the top 3 driving features with percentage contribution and plain-English reasoning via SHAP values.
+* **Strict Guardrails**: Enforces per-industry 95th-percentile growth ceilings and zero-spend bounds to ensure predictions remain realistic.
 
-> [!NOTE]
-> **Traditional ML Design**: No Large Language Models (LLMs) or generative AI APIs are used in this engine. All predictions and explanations are generated deterministically by gradient-boosted trees and game-theoretic attribution.
+### Supported Industries
+The engine natively supports 10 B2B industry verticals, each calibrated with distinct spending distributions, growth multipliers, and product catalogs:
+* Technology
+* Finance
+* Healthcare
+* Retail
+* Manufacturing
+* Logistics & Supply Chain
+* Education
+* Real Estate
+* Hospitality
+* E-commerce
 
-### 1.2 Target Use Cases
-- **Account Prioritization**: Sales teams prioritize renewals and outreach for high-CLV accounts.
-- **Timing Optimization**: Pinpoints the exact calendar date when a client is most receptive to add-on solutions.
-- **Churn Prevention & Guardrails**: Flags accounts with declining engagement or plateauing spend velocity.
-- **10 B2B Industry Verticals Supported**:
-  - Technology
-  - Finance
-  - Healthcare
-  - Retail
-  - Manufacturing
-  - Logistics & Supply Chain
-  - Education
-  - Real Estate
-  - Hospitality
-  - E-commerce
+### Business Use Cases
+* **Key Account Planning**: Equips Account Executives and Customer Success Managers with prioritized expansion candidates during Quarterly Business Reviews (QBRs).
+* **Automated CRM Action Triggers**: Automatically updates CRM fields (e.g., Salesforce, HubSpot) with predicted CLV and schedules calendar reminders for the dynamic cross-sell pitch window.
+* **Churn Mitigation**: Highlights deteriorating accounts where negative SHAP drivers (e.g., declining engagement or spend velocity) threaten future account value.
+* **Executive Revenue Pipeline Forecasting**: Aggregates account lifetime value across portfolio cohorts for leadership dashboards.
 
 ---
 
-## 2. Workflow & Architecture
+## 2. Workflow
 
-The microservice follows a decoupled pipeline from request validation to feature derivation, dual-model inference, guardrail clamping, explainability extraction, and database persistence.
+The end-to-end inference workflow runs deterministically from input validation through feature derivation, dual-model scoring, business clamping, explainability generation, and persistence.
 
-### 2.1 End-to-End Processing Steps
-1. **Request Intake**: Client payload arrives via REST API (`POST /api/v1/clv/predict`) or Terminal CLI.
-2. **Schema & Contract Validation**: Pydantic v2 enforces boundary checks, enum compliance, and ISO-8601 calendar validity.
-3. **Feature Engineering**: The feature store derives interaction terms (`spend_velocity`, `spend_per_tenure_year`, `engagement_x_tenure`).
-4. **Data Preprocessing**: `ColumnTransformer` standardizes numerical features (`StandardScaler`) and one-hot encodes industry categories (`OneHotEncoder`).
-5. **Dual-Model Inference**:
-   - **XGBRegressor** computes raw lifetime revenue.
-   - **XGBClassifier** calculates upsell probability.
-6. **Guardrail Clamping**: Predicted CLV is capped against the pre-calculated 95th-percentile industry ceiling to prevent unrealistic runaway forecasts.
-7. **Explainability Extraction**: `shap.TreeExplainer` calculates signed contributions for each feature and extracts the top 3 drivers.
-8. **Dynamic Cross-Sell Scheduling**: Multi-factor timing heuristics combine client tenure, annual contract renewal cycle, engagement, and purchase frequency into an exact target pitch date.
-9. **Persistence**: Input and output payloads, metadata, and SHAP drivers are stored in the local SQLite audit database (`database/clv_predictions.db`).
-10. **Client Delivery**: Results are returned as structured JSON to API consumers or rendered into rich formatted terminal cards for account managers.
+### Step-by-Step Execution Flow
+1. **Request Validation**: The client submits an account payload via HTTP or CLI. Pydantic validates data types, non-negative constraints, and industry enums.
+2. **Feature Engineering**: The feature store derives interaction and velocity metrics (`spend_velocity`, `spend_per_tenure_year`, `engagement_x_tenure`) to ensure train/serve parity.
+3. **CLV Regression**: The feature vector is passed to the preprocessed `XGBRegressor` pipeline to compute the raw predicted CLV.
+4. **Per-Industry Ceiling Clamp**: The raw CLV prediction is capped at the empirical 95th percentile ceiling for the client's industry to prevent runaway outlier predictions.
+5. **SHAP Driver Extraction**: A pre-cached `shap.TreeExplainer` decomposes the prediction into feature contributions, maps one-hot encoded categories back to human-readable names, and extracts the top 3 drivers.
+6. **ML Upsell Classification**: An `XGBClassifier` scores the client's upgrade propensity. The opportunity is flagged `true` only if the ML probability exceeds `0.60` AND the client passes engagement ($\ge 72$) and tenure ($\ge 10\text{ months}$) guardrails.
+7. **Dynamic Cross-Sell Engine**: Evaluates whether the client's CLV exceeds the industry median and purchase frequency $\ge 3$. Computes a personalized pitch target date by dynamically adjusting a base 45-day window against engagement, frequency, tenure, and annual contract renewal proximity.
+8. **Confidence Interval Estimation**: Starts from the baseline model $R^2$ score and deducts graduated penalties for any feature values falling outside the empirical 1st–99th training percentiles.
+9. **Persistence & Response**: The full prediction record, including SHAP drivers JSON, is logged to SQLite (`clv_predictions.db`) for auditing, and the validated `CLVOutputPayload` is returned.
 
-### 2.2 System Flowchart
+### Architecture Flowchart
 
 ```mermaid
 flowchart TD
-    A["Client / Frontend Request (JSON)"] --> B["Pydantic v2 Validation (app/clv_schemas.py)"]
-    B -->|Invalid Data / Future Date| ERR["HTTP 422 Unprocessable Entity"]
-    B -->|Valid Payload| C["Feature Store (pipelines/feature_store.py)"]
+    A["Client Request / CLI / CRON"] --> B["FastAPI Endpoint /api/v1/clv/predict"]
+    B --> C["Pydantic Validation (CLVInputPayload)"]
+    C --> D["Feature Store (pipelines/feature_store.py)"]
     
     subgraph Feature Engineering
-        C --> C1["Derive Spend Velocity"]
-        C --> C2["Derive Annualised Spend"]
-        C --> C3["Compute Engagement × Tenure"]
+        D --> D1["spend_velocity = spend / tenure"]
+        D --> D2["spend_per_tenure_year = spend / (tenure / 12)"]
+        D --> D3["engagement_x_tenure = engagement * tenure"]
+        D --> D4["One-Hot Encode Industry"]
     end
     
-    C1 & C2 & C3 --> D["Sklearn Pipeline (StandardScaler + OneHotEncoder)"]
+    D1 & D2 & D3 & D4 --> E["Dual ML Inference Engine"]
     
-    subgraph Dual ML Models
-        D --> E1["XGBRegressor (CLV Forecast)"]
-        D --> E2["XGBClassifier (Upsell Signal)"]
+    subgraph Dual ML & Explainability
+        E --> F1["XGBRegressor (clv_pipeline_v2.pkl)"]
+        E --> F2["XGBClassifier (upsell_model.pkl)"]
+        E --> F3["TreeExplainer (shap)"]
+        
+        F1 --> G1["Raw CLV Amount"]
+        G1 --> G2["Apply Industry 95th-Pct Ceiling Clamp"]
+        
+        F2 --> H1["Upsell Probability Score"]
+        H1 --> H2{"Gate: Score >= 0.60 &<br>Eng >= 72 & Tenure >= 10m"}
+        H2 -- Yes --> H3["Upsell Detected = True"]
+        H2 -- No --> H4["Upsell Detected = False"]
+        
+        F3 --> I1["Extract Top 3 Feature Contributions"]
+        I1 --> I2["Generate Plain-English Driver Reason"]
     end
     
-    E1 --> F["95th-Percentile Industry Ceiling Clamp"]
-    F --> G["Clamped CLV Amount"]
+    G2 & H3 & H4 & I2 --> J["Dynamic Cross-Sell Engine"]
     
-    E1 --> H["SHAP TreeExplainer"]
-    H --> I["Top 3 Feature Drivers & Plain-English Reason"]
+    subgraph Cross-Sell & Confidence
+        J --> K1{"Gate: Freq >= 3 &<br>CLV > Industry Median"}
+        K1 -- Yes --> K2["Cross-Sell Detected = True"]
+        K1 -- No --> K3["Cross-Sell Detected = False"]
+        
+        J --> K4["Compute Dynamic Pitch Offset:<br>45d + Eng_Adj + Freq_Adj + Tenure_Adj + Renewal_Adj"]
+        J --> K5["Compute Confidence % (R2 Base - Percentile Penalties)"]
+    end
     
-    E2 --> J{"Upsell Rule Gate (Score >= 0.60, Eng >= 72, Tenure >= 10m)"}
-    J -->|Pass| K["Flag Upsell + Assign Industry Target Tier"]
-    J -->|Fail| L["Upsell: No Action Required"]
-    
-    G & B --> M["Dynamic Cross-Sell Timing Engine"]
-    M --> N["Calculate Specific Pitch Date & Confidence"]
-    
-    G & I & K & L & N --> O["Assemble CLVOutputPayload"]
-    O --> P[("SQLite Persistence Layer (database/db.py)")]
-    O --> Q["REST API Response (JSON) / CLI Terminal UI"]
+    K2 & K3 & K4 & K5 --> L["Save Prediction to SQLite (database/clv_predictions.db)"]
+    L --> M["Return Validated CLVOutputPayload"]
 ```
 
 ---
 
 ## 3. Input Parameters
 
-Predictions require **7 account parameters**. The schema is strictly validated by Pydantic v2 in [`app/clv_schemas.py`](app/clv_schemas.py).
+Predictions are initiated by posting a JSON payload conforming to the `CLVInputPayload` schema.
 
-| Field Name | Type | Constraints & Rules | Sample Value | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `company_id` | `string` | Non-empty string or UUID | `"client-tech-001"` | Unique identifier of the enterprise client account. |
-| `historical_spend_amount` | `float` | `>= 0.0` (INR) | `25000.0` | Total cumulative spend recorded to date in Indian Rupees. |
-| `purchase_frequency_yearly` | `integer`| `>= 0` | `8` | Number of purchase/order cycles completed per calendar year. |
-| `industry_type` | `string` | Must be 1 of 10 supported Enum values | `"Technology"` | B2B vertical category (determines ceilings & product catalogs). |
-| `rolling_engagement_score` | `float` | `0.0` to `100.0` | `85.0` | Normalized account activity score based on platform usage & interactions. |
-| `contract_tenure_months` | `integer`| `>= 0` | `24` | Cumulative months the client has been under active contract. |
-| `contract_start_date` | `string` | Optional, ISO-8601 (`YYYY-MM-DD`), cannot be future | `"2024-01-15"` | Start date of initial contract. Used for annual renewal proximity adjustments. |
+### Parameter Specification
 
-### 3.1 Supported Industry Enums
-`Technology`, `Finance`, `Healthcare`, `Retail`, `Manufacturing`, `Logistics & Supply Chain`, `Education`, `Real Estate`, `Hospitality`, `E-commerce`.
+| Parameter Name | Data Type | Format / Constraints | Required | Sample Value | Description & Business Rules |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `company_id` | `string` | Non-empty string | Yes | `"client-tech-001"` | Unique identifier for the enterprise account or lead. |
+| `historical_spend_amount` | `float` | $\ge 0.0$ | Yes | `22000.0` | Total cumulative spend in INR across all completed invoices. If `0.0`, CLV is clamped to `0.0`. |
+| `purchase_frequency_yearly`| `integer` | $\ge 0$ | Yes | `8` | Number of distinct orders or renewal transactions per calendar year. |
+| `industry_type` | `string` | Valid `IndustryType` Enum | Yes | `"Technology"` | B2B vertical. Must match one of the 10 supported industry strings exactly. |
+| `rolling_engagement_score` | `float` | $0.0 \le x \le 100.0$ | Yes | `88.5` | Composite engagement metric reflecting portal usage, support interactions, and feature adoption. |
+| `contract_tenure_months` | `integer` | $\ge 0$ | Yes | `28` | Number of continuous active months under contract. |
+| `contract_start_date` | `string` | ISO-8601 `YYYY-MM-DD` | No | `"2024-06-15"` | Effective agreement start date. Used to detect approaching annual contract renewals. |
 
-### 3.2 Sample Input Payload (`POST /api/v1/clv/predict`)
+### Supported `industry_type` Enum Values
+* `"Technology"`
+* `"Finance"`
+* `"Healthcare"`
+* `"Retail"`
+* `"Manufacturing"`
+* `"Logistics & Supply Chain"`
+* `"Education"`
+* `"Real Estate"`
+* `"Hospitality"`
+* `"E-commerce"`
+
+### Sample Input Payload
 ```json
 {
   "company_id": "client-tech-001",
-  "historical_spend_amount": 25000.0,
+  "historical_spend_amount": 22000.0,
   "purchase_frequency_yearly": 8,
   "industry_type": "Technology",
-  "rolling_engagement_score": 85.0,
-  "contract_tenure_months": 24,
-  "contract_start_date": "2024-01-15"
+  "rolling_engagement_score": 88.5,
+  "contract_tenure_months": 28,
+  "contract_start_date": "2024-06-15"
 }
 ```
 
@@ -144,60 +240,63 @@ Predictions require **7 account parameters**. The schema is strictly validated b
 
 ## 4. Output Parameters
 
-The engine returns a structured JSON payload divided into 3 major sections: **Core CLV Forecast**, **Expansion Analytics**, and **Cross-Sell Window**.
+The engine returns a structured, fully validated `CLVOutputPayload`.
 
-### 4.1 Schema Breakdown
-- **`company_id`** (`string`): The client identifier provided in the request.
-- **`predicted_clv_amount`** (`float`): Projected total monetary value in INR over the client's lifecycle.
-- **`confidence_interval_percentage`** (`float`, 0–100%): Model confidence level calibrated by test R² and penalized for statistical outliers.
-- **`prediction_timestamp`** (`string`): ISO-8601 UTC timestamp of inference generation.
-- **`expansion_analytics`** (`object`):
-  - `upsell_opportunity_detected` (`boolean`): Whether account qualifies for an upgrade.
-  - `upsell_confidence_score` (`float`, 0.0–1.0): Probability generated by `XGBClassifier`.
-  - `recommended_target_product` (`string`): Recommended upgrade tier for this industry.
-  - `top_prediction_driver_reason` (`string`): Plain-English explanation of primary driver.
-  - `shap_drivers` (`array`): Top 3 feature contributors containing `feature`, `value`, `shap_contribution`, `direction` (`positive`/`negative`), and `contribution_pct`.
-- **`cross_sell_opportunity_window`** (`object`):
-  - `cross_sell_detected` (`boolean`): Whether client qualifies for an add-on product.
-  - `secondary_product_slug` (`string`): Machine-readable identifier for add-on module.
-  - `secondary_product_name` (`string`): Human-readable product name.
-  - `optimal_pitch_target_date` (`string`): Client-specific calendar pitch date (`YYYY-MM-DD`).
-  - `days_until_optimal_pitch` (`integer`): Remaining days from current date to target pitch date.
-  - `timing_confidence_score` (`float`, 0.0–1.0): Composite multi-factor timing confidence.
-  - `pitch_rationale` (`string`): Contextual explanation for the selected target date.
+### Output Field Specification
 
-### 4.2 Sample Output Response
+| JSON Key | Type | Description |
+| :--- | :--- | :--- |
+| `company_id` | `string` | The client identifier from the input request. |
+| `predicted_clv_amount` | `float` | Estimated remaining/total lifetime value in INR, bounded by industry guardrails. |
+| `confidence_interval_percentage` | `float` | Estimated statistical reliability ($5.0\% - 100.0\%$) based on training $R^2$ and input distribution overlap. |
+| `expansion_analytics` | `object` | Upsell signal, product recommendations, and explainability breakdown. |
+| `expansion_analytics.upsell_opportunity_detected` | `boolean` | `true` if client passes both ML upsell confidence and business sanity gates. |
+| `expansion_analytics.upsell_confidence_score` | `float` | Raw probability output from the `XGBClassifier` ($0.0 - 1.0$). |
+| `expansion_analytics.recommended_target_product` | `string` | Industry-specific premium upgrade tier recommendation. |
+| `expansion_analytics.top_prediction_driver_reason` | `string` | Plain-English summary explaining the #1 primary factor influencing the forecast. |
+| `expansion_analytics.shap_drivers` | `array[object]` | Top 3 features by absolute SHAP impact with signed values and relative percentage attribution. |
+| `cross_sell_opportunity_window` | `object` | Complementary product recommendation and dynamic scheduling metrics. |
+| `cross_sell_opportunity_window.cross_sell_detected` | `boolean` | `true` if purchase frequency $\ge 3$ and predicted CLV exceeds the industry median. |
+| `cross_sell_opportunity_window.secondary_product_slug` | `string` | Machine-readable slug for the recommended cross-sell add-on. |
+| `cross_sell_opportunity_window.secondary_product_name` | `string` | Human-readable title for the cross-sell module. |
+| `cross_sell_opportunity_window.optimal_pitch_target_date` | `string` | Personalized pitch target date formatted as `YYYY-MM-DD`. |
+| `cross_sell_opportunity_window.days_until_optimal_pitch` | `integer` | Number of calendar days from today until the optimal pitch date. |
+| `cross_sell_opportunity_window.timing_confidence_score` | `float` | Multi-factor confidence score for pitch timing ($0.0 - 1.0$). |
+| `cross_sell_opportunity_window.pitch_rationale` | `string` | Narrative explanation of how client behavior shifted the pitch timing. |
+| `prediction_timestamp` | `string` | UTC timestamp in ISO-8601 format (`YYYY-MM-DDTHH:MM:SSZ`). |
+
+### Sample Output Response
 ```json
 {
   "company_id": "client-tech-001",
-  "predicted_clv_amount": 423671.66,
+  "predicted_clv_amount": 412850.50,
   "confidence_interval_percentage": 76.45,
   "expansion_analytics": {
-    "upsell_opportunity_detected": false,
-    "upsell_confidence_score": 0.2574,
+    "upsell_opportunity_detected": true,
+    "upsell_confidence_score": 0.8421,
     "recommended_target_product": "Enterprise AI Suite — Unlimited Seats + Custom Model Training",
-    "top_prediction_driver_reason": "Historical spend of ₹25,000 is positively influencing the CLV forecast (22% of signal), reflecting the client's demonstrated spending capacity.",
+    "top_prediction_driver_reason": "Engagement score of 89/100 is positively driving the CLV prediction, accounting for 38% of the model's signal — high engagement signals strong retention.",
     "shap_drivers": [
       {
+        "feature": "Engagement Score",
+        "value": 88.5,
+        "shap_contribution": 48210.35,
+        "direction": "positive",
+        "contribution_pct": 38.2
+      },
+      {
+        "feature": "Engagement × Tenure Interaction",
+        "value": 2478.0,
+        "shap_contribution": 39150.12,
+        "direction": "positive",
+        "contribution_pct": 31.0
+      },
+      {
         "feature": "Historical Spend",
-        "value": 25000.0,
-        "shap_contribution": 56410.05,
+        "value": 22000.0,
+        "shap_contribution": 38920.45,
         "direction": "positive",
-        "contribution_pct": 22.3
-      },
-      {
-        "feature": "Industry Type",
-        "value": "Technology",
-        "shap_contribution": 50035.75,
-        "direction": "positive",
-        "contribution_pct": 19.8
-      },
-      {
-        "feature": "Annualised Spend per Year",
-        "value": 12500.0,
-        "shap_contribution": 41412.02,
-        "direction": "positive",
-        "contribution_pct": 16.4
+        "contribution_pct": 30.8
       }
     ]
   },
@@ -205,546 +304,286 @@ The engine returns a structured JSON payload divided into 3 major sections: **Co
     "cross_sell_detected": true,
     "secondary_product_slug": "ai-workflow-automation",
     "secondary_product_name": "AI Workflow Automation Module",
-    "optimal_pitch_target_date": "2026-11-09",
+    "optimal_pitch_target_date": "2026-11-10",
     "days_until_optimal_pitch": 25,
-    "timing_confidence_score": 0.825,
-    "pitch_rationale": "Pitch timing adjusted for this client: high engagement (85/100) suggests client is receptive; frequent buyer (8/yr) accelerates timing."
+    "timing_confidence_score": 0.8425,
+    "pitch_rationale": "Pitch timing adjusted for this client: high engagement (89/100) suggests client is receptive; frequent buyer (8/yr) accelerates timing."
   },
-  "prediction_timestamp": "2026-10-15T10:00:32Z"
+  "prediction_timestamp": "2026-10-16T05:21:19Z"
 }
 ```
 
 ---
 
-## 5. Technical Implementation & Algorithms
+## 5. Technical Implementation
 
-### 5.1 Machine Learning Models
-- **Regression Engine (`XGBRegressor`)**: 
-  - Fitted inside a scikit-learn `Pipeline` with `StandardScaler` and `OneHotEncoder`.
-  - Hyperparameters: `n_estimators=180`, `max_depth=4`, `learning_rate=0.06`, `subsample=0.85`, `colsample_bytree=0.85`, `reg_alpha=0.1`, `reg_lambda=1.0`.
-  - Objective: `reg:squarederror`. Evaluated on held-out test data achieving $R^2 \ge 0.76$.
-- **Classification Engine (`XGBClassifier`)**:
-  - Secondary model predicting binary upsell readiness (`0` or `1`).
-  - Output probability represents `upsell_confidence_score`.
+### Core Machine Learning Algorithms
+1. **CLV Regressor (`XGBRegressor`)**:
+   * Architecture: `scikit-learn` `Pipeline` comprising a `ColumnTransformer` (`StandardScaler` for continuous features, `OneHotEncoder` for industry) fed into an `XGBRegressor`.
+   * Hyperparameters: `n_estimators=300`, `max_depth=5`, `learning_rate=0.07`, `subsample=0.85`, `colsample_bytree=0.85`, `reg_alpha=0.1`, `reg_lambda=1.0`, `tree_method="hist"`.
+   * Stored Artifact: `models_registry/clv_pipeline_v2.pkl`.
+2. **Upsell Classifier (`XGBClassifier`)**:
+   * Architecture: Identical preprocessing pipeline fed into an `XGBClassifier` trained on historical upsell expansion signals.
+   * Hyperparameters: `n_estimators=200`, `max_depth=4`, `learning_rate=0.08`, `subsample=0.80`, `colsample_bytree=0.80`, `eval_metric="logloss"`.
+   * Stored Artifact: `models_registry/upsell_model.pkl`.
 
-### 5.2 Feature Engineering Formulas ([`pipelines/feature_store.py`](pipelines/feature_store.py))
-To prevent train/serve skew, both training and production inference import feature logic from `feature_store.py`:
-$$\text{Spend Velocity} = \frac{\text{historical\_spend\_amount}}{\max(\text{contract\_tenure\_months}, 1)}$$
+### Derived Feature Formulas ([pipelines/feature_store.py](pipelines/feature_store.py))
+To avoid train/serve skew, identical feature derivation logic is executed during both training and inference:
+* **Spend Velocity** (monthly spend rate):
+  $$\text{spend\_velocity} = \frac{\text{historical\_spend\_amount}}{\max(\text{contract\_tenure\_months}, 1)}$$
+* **Annualized Spend Intensity**:
+  $$\text{spend\_per\_tenure_year} = \frac{\text{historical\_spend\_amount}}{\max(\text{contract\_tenure\_months}, 1) / 12.0}$$
+* **Joint Interaction Term**:
+  $$\text{engagement\_x\_tenure} = \text{rolling\_engagement\_score} \times \text{contract\_tenure\_months}$$
 
-$$\text{Spend per Tenure Year} = \frac{\text{historical\_spend\_amount}}{\max\left(\frac{\text{contract\_tenure\_months}}{12}, 0.25\right)}$$
-
-$$\text{Engagement} \times \text{Tenure} = \text{rolling\_engagement\_score} \times \text{contract\_tenure\_months}$$
-
-### 5.3 Ceiling Clamp (Guardrail Formula)
-To prevent extreme extrapolation on outlier accounts, every prediction is passed through a per-industry ceiling:
-$$\text{Ceiling} = \text{historical\_spend\_amount} \times \text{Multiplier}_{95\text{th}}$$
-$$\text{CLV}_{\text{final}} = \min(\text{CLV}_{\text{raw}}, \text{Ceiling})$$
-
-Industry 95th-percentile multipliers are calculated during training and stored in `models_registry/industry_clv_ceilings.json`.
-
-### 5.4 Dynamic Cross-Sell Pitch Algorithm
-Rather than assigning a fixed 30-day follow-up, pitch dates are computed through behavioral adjustments:
-$$\text{Total Offset} = \max\left(7, \text{Base Offset}(45) + \text{Adj}_{\text{eng}} + \text{Adj}_{\text{freq}} + \text{Adj}_{\text{tenure}} + \text{Adj}_{\text{renewal}}\right)$$
-
-| Factor | Condition | Adjustment |
-| :--- | :--- | :--- |
-| **Engagement** | $\ge 80$ / $\ge 65$ / $\ge 50$ / $\ge 35$ / $<35$ | $-15$ d / $-8$ d / $0$ d / $+10$ d / $+20$ d |
-| **Purchase Frequency** | $\ge 10$ / $\ge 6$ / $\ge 3$ / $<3$ per year | $-10$ d / $-5$ d / $0$ d / $+8$ d |
-| **Contract Tenure** | $<6$ months / $<12$ months / $\ge 12$ months | $+15$ d / $+5$ d / $0$ d |
-| **Renewal Proximity** | Contract annual cycle in month 10–11.5 | $-10$ d (Pitch before annual budget lock) |
-
-### 5.5 Multi-Factor Timing Confidence
-$$\text{Confidence} = 0.50 \times \left(\frac{\text{Engagement}}{100}\right) + 0.30 \times \min\left(\frac{\text{Freq}}{12}, 1.0\right) + 0.20 \times \mathbb{I}_{(\text{CLV} > \text{Industry Median})}$$
+### Business Rules & Guardrails
+1. **Per-Industry 95th-Percentile Growth Ceiling**:
+   * Historical client spending patterns vary widely by industry. To prevent runaway multiplier projections, raw predictions are capped at the industry's empirical 95th-percentile spend multiplier:
+     $$\text{Predicted CLV} = \min\left(\text{Raw CLV}, \text{historical\_spend\_amount} \times \text{Ceiling}_{\text{industry}}\right)$$
+   * Ceilings are calibrated in [models_registry/industry_clv_ceilings.json](models_registry/industry_clv_ceilings.json):
+     * *E-commerce*: $34.17\times$ | *Technology*: $28.44\times$ | *Retail*: $26.29\times$ | *Logistics*: $23.83\times$
+     * *Finance*: $22.61\times$ | *Healthcare*: $18.86\times$ | *Hospitality*: $17.21\times$ | *Real Estate*: $16.33\times$
+     * *Education*: $14.61\times$ | *Manufacturing*: $14.21\times$
+2. **Dual-Gated Upsell Logic**:
+   * An upsell opportunity is flagged `true` if and only if all three conditions are satisfied:
+     1. $\text{ML Upsell Probability} \ge 0.60$
+     2. $\text{rolling\_engagement\_score} \ge 72.0$
+     3. $\text{contract\_tenure\_months} \ge 10$
+3. **Dynamic Cross-Sell Timing Calculation**:
+   * Standard offset begins at a 45-day baseline and dynamically adjusts based on behavioral indicators:
+     $$\text{Days to Pitch} = \max\left(7, 45 + \Delta_{\text{engagement}} + \Delta_{\text{frequency}} + \Delta_{\text{tenure}} + \Delta_{\text{renewal}}\right)$$
+   * **Adjustments**:
+     * Engagement: $\ge 80 \to -15\text{d}$; $65-79 \to -8\text{d}$; $50-64 \to 0\text{d}$; $35-49 \to +10\text{d}$; $<35 \to +20\text{d}$
+     * Purchase Frequency: $\ge 10/\text{yr} \to -10\text{d}$; $6-9/\text{yr} \to -5\text{d}$; $3-5/\text{yr} \to 0\text{d}$; $<3/\text{yr} \to +8\text{d}$
+     * Contract Tenure: $<6\text{ months} \to +15\text{d}$; $6-11\text{ months} \to +5\text{d}$; $\ge 12\text{ months} \to 0\text{d}$
+     * Renewal Proximity: If active tenure mod 12 months is between 10.0 and 11.5 months $\to -10\text{d}$ (pitch right before annual renewal).
+   * **Gating**: Cross-sell is flagged only if $\text{purchase\_frequency\_yearly} \ge 3$ AND $\text{Predicted CLV} > \text{Industry Median CLV}$.
+   * **Timing Confidence Score**:
+     $$\text{Timing Confidence} = \left(\frac{\text{engagement}}{100} \times 0.50\right) + \left(\min\left(\frac{\text{frequency}}{12}, 1.0\right) \times 0.30\right) + \left(0.20 \text{ if above median else } 0.0\right)$$
+4. **Graduated Confidence Interval**:
+   * Base confidence is derived from the test-set $R^2$ ($\approx 76.45\%$).
+   * Features exceeding empirical 1st–99th training bounds receive a graduated penalty:
+     $$\text{Penalty}_{\text{feature}} = \min\left(\frac{|\text{value} - \text{bound}|}{\text{range}} \times 20, 15\right)$$
+   * Total penalty is capped at 30 percentage points, with a minimum floor of $5.0\%$.
 
 ---
 
 ## 6. API & Integration Details
 
-### 6.1 Comprehensive API Endpoints Reference
+### API Endpoints Summary
 
-The service exposes 6 REST API endpoints. Below is a detailed breakdown of **where**, **when**, and **how** each endpoint is used, along with exact request/response schemas.
+| Method | Endpoint | Description |
+| :---: | :--- | :--- |
+| `GET` | `/health` | Liveness and health check endpoint. |
+| `POST` | `/api/v1/clv/predict` | Computes prediction for a single account and records result to database. |
+| `POST` | `/api/v1/clv/batch-predict` | Batch prediction endpoint with automated engagement data drift detection. |
+| `GET` | `/api/v1/clv/history/{company_id}` | Retrieves all historical predictions recorded for a specific account. |
+| `GET` | `/api/v1/clv/recent` | Returns the most recent $N$ predictions across all accounts. |
+| `GET` | `/api/v1/clv/summary` | Executive dashboard aggregate statistics (avg CLV, upsell %, cross-sell %). |
 
 ---
 
-#### 1. `POST /api/v1/clv/predict` — Single Account Prediction
-* **Where & When it is used**: 
-  * Triggered whenever an account executive or sales representative views an individual client's profile in the CRM or Frontend dashboard.
-  * Used on-demand to recalculate revenue projections when a client signs a contract extension or completes a major purchase.
-* **How it is used**:
-  * Send an HTTP `POST` request with a JSON payload satisfying the `CLVInputPayload` schema.
-* **cURL Request Example**:
+### Detailed Endpoint Specifications
+
+#### 1. Single Account Prediction
+* **Endpoint**: `POST /api/v1/clv/predict`
+* **Request Headers**: `Content-Type: application/json`
+* **cURL Example**:
   ```bash
   curl -X POST "http://127.0.0.1:8000/api/v1/clv/predict" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "company_id": "client-tech-001",
-      "historical_spend_amount": 25000.0,
-      "purchase_frequency_yearly": 8,
-      "industry_type": "Technology",
-      "rolling_engagement_score": 85.0,
-      "contract_tenure_months": 24,
-      "contract_start_date": "2024-01-15"
-    }'
-  ```
-* **Response Body (`200 OK`)**:
-  ```json
-  {
-    "company_id": "client-tech-001",
-    "predicted_clv_amount": 423671.66,
-    "confidence_interval_percentage": 76.45,
-    "expansion_analytics": {
-      "upsell_opportunity_detected": false,
-      "upsell_confidence_score": 0.2574,
-      "recommended_target_product": "Enterprise AI Suite — Unlimited Seats + Custom Model Training",
-      "top_prediction_driver_reason": "Historical spend of ₹25,000 is positively influencing the CLV forecast (22% of signal), reflecting the client's demonstrated spending capacity.",
-      "shap_drivers": [
-        {
-          "feature": "Historical Spend",
-          "value": 25000.0,
-          "shap_contribution": 56410.05,
-          "direction": "positive",
-          "contribution_pct": 22.3
-        },
-        {
-          "feature": "Industry Type",
-          "value": "Technology",
-          "shap_contribution": 50035.75,
-          "direction": "positive",
-          "contribution_pct": 19.8
-        },
-        {
-          "feature": "Annualised Spend per Year",
-          "value": 12500.0,
-          "shap_contribution": 41412.02,
-          "direction": "positive",
-          "contribution_pct": 16.4
-        }
-      ]
-    },
-    "cross_sell_opportunity_window": {
-      "cross_sell_detected": true,
-      "secondary_product_slug": "ai-workflow-automation",
-      "secondary_product_name": "AI Workflow Automation Module",
-      "optimal_pitch_target_date": "2026-11-09",
-      "days_until_optimal_pitch": 25,
-      "timing_confidence_score": 0.825,
-      "pitch_rationale": "Pitch timing adjusted for this client: high engagement (85/100) suggests client is receptive; frequent buyer (8/yr) accelerates timing."
-    },
-    "prediction_timestamp": "2026-10-15T10:00:32Z"
-  }
+       -H "Content-Type: application/json" \
+       -d '{
+         "company_id": "client-tech-001",
+         "historical_spend_amount": 22000.0,
+         "purchase_frequency_yearly": 8,
+         "industry_type": "Technology",
+         "rolling_engagement_score": 88.5,
+         "contract_tenure_months": 28,
+         "contract_start_date": "2024-06-15"
+       }'
   ```
 
----
-
-#### 2. `POST /api/v1/clv/batch-predict` — Batch Prediction & Data Drift Detection
-* **Where & When it is used**:
-  * Used in **nightly or weekly automated cron jobs** (e.g., Sunday night ETL pipeline) to recalculate CLV for hundreds or thousands of accounts simultaneously.
-  * Used when importing client datasets from external CSV or ERP sources.
-  * Inbuilt drift detection logs warnings if the average batch engagement deviates by $>15\%$ from baseline.
-* **How it is used**:
-  * Send an HTTP `POST` containing a JSON array of client objects (`list[CLVInputPayload]`).
-  * Individual record errors are caught and logged without aborting the entire batch run.
-* **cURL Request Example**:
+#### 2. Batch Account Prediction
+* **Endpoint**: `POST /api/v1/clv/batch-predict`
+* **cURL Example**:
   ```bash
   curl -X POST "http://127.0.0.1:8000/api/v1/clv/batch-predict" \
-    -H "Content-Type: application/json" \
-    -d '[
-      {
-        "company_id": "client-001",
-        "historical_spend_amount": 15000.0,
-        "purchase_frequency_yearly": 4,
-        "industry_type": "Retail",
-        "rolling_engagement_score": 68.0,
-        "contract_tenure_months": 12
-      },
-      {
-        "company_id": "client-002",
-        "historical_spend_amount": 45000.0,
-        "purchase_frequency_yearly": 10,
-        "industry_type": "Finance",
-        "rolling_engagement_score": 92.0,
-        "contract_tenure_months": 36,
-        "contract_start_date": "2023-08-01"
-      }
-    ]'
-  ```
-* **Response Body (`200 OK`)**:
-  ```json
-  [
-    {
-      "company_id": "client-001",
-      "predicted_clv_amount": 164210.50,
-      "confidence_interval_percentage": 76.5,
-      "expansion_analytics": { ... },
-      "cross_sell_opportunity_window": { ... },
-      "prediction_timestamp": "2026-10-15T10:05:00Z"
-    },
-    {
-      "company_id": "client-002",
-      "predicted_clv_amount": 589400.00,
-      "confidence_interval_percentage": 82.0,
-      "expansion_analytics": { ... },
-      "cross_sell_opportunity_window": { ... },
-      "prediction_timestamp": "2026-10-15T10:05:01Z"
-    }
-  ]
+       -H "Content-Type: application/json" \
+       -d '[
+         {
+           "company_id": "client-tech-001",
+           "historical_spend_amount": 22000.0,
+           "purchase_frequency_yearly": 8,
+           "industry_type": "Technology",
+           "rolling_engagement_score": 88.5,
+           "contract_tenure_months": 28
+         },
+         {
+           "company_id": "client-fin-002",
+           "historical_spend_amount": 45000.0,
+           "purchase_frequency_yearly": 5,
+           "industry_type": "Finance",
+           "rolling_engagement_score": 62.0,
+           "contract_tenure_months": 36
+         }
+       ]'
   ```
 
----
-
-#### 3. `GET /api/v1/clv/history/{company_id}` — Client Prediction Audit Trail
-* **Where & When it is used**:
-  * Used in the **Account History / Audit Timeline** tab of the frontend CRM.
-  * Allows account executives to see how a client's CLV forecast, upsell signals, and engagement have trended across multiple quarters.
-* **How it is used**:
-  * Send an HTTP `GET` with the `company_id` passed in the URL path.
-* **cURL Request Example**:
+#### 3. Client Prediction History
+* **Endpoint**: `GET /api/v1/clv/history/{company_id}`
+* **cURL Example**:
   ```bash
   curl -X GET "http://127.0.0.1:8000/api/v1/clv/history/client-tech-001"
   ```
-* **Response Body (`200 OK`)**:
-  ```json
-  [
-    {
-      "id": 34,
-      "prediction_timestamp": "2026-10-15T10:00:32Z",
-      "company_id": "client-tech-001",
-      "industry_type": "Technology",
-      "historical_spend_amount": 25000.0,
-      "purchase_frequency_yearly": 8,
-      "rolling_engagement_score": 85.0,
-      "contract_tenure_months": 24,
-      "predicted_clv_amount": 423671.66,
-      "confidence_interval_pct": 76.45,
-      "upsell_opportunity_detected": 0,
-      "upsell_confidence_score": 0.2574,
-      "recommended_target_product": "Enterprise AI Suite — Unlimited Seats + Custom Model Training",
-      "cross_sell_detected": 1,
-      "secondary_product_name": "AI Workflow Automation Module",
-      "optimal_pitch_target_date": "2026-11-09",
-      "days_until_optimal_pitch": 25,
-      "timing_confidence_score": 0.825,
-      "top_prediction_driver_reason": "Historical spend of ₹25,000 is positively influencing the CLV forecast..."
-    }
-  ]
-  ```
-* **Error Response (`404 Not Found`)**: If no predictions exist for the requested client ID:
-  ```json
-  { "detail": "No predictions found for company_id: unknown-client" }
-  ```
 
----
-
-#### 4. `GET /api/v1/clv/summary` — Executive Leadership Dashboard Stats
-* **Where & When it is used**:
-  * Used in the **Main Executive KPI Widget** on leadership dashboards.
-  * Gives VP of Sales and RevOps leadership immediate visibility into portfolio revenue potential and upsell readiness.
-* **How it is used**:
-  * Send an HTTP `GET` request. No query parameters or body required.
-* **cURL Request Example**:
-  ```bash
-  curl -X GET "http://127.0.0.1:8000/api/v1/clv/summary"
-  ```
-* **Response Body (`200 OK`)**:
+#### 4. Executive Summary Statistics
+* **Endpoint**: `GET /api/v1/clv/summary`
+* **Response Example**:
   ```json
   {
-    "total_predictions": 36,
-    "avg_predicted_clv": 407427.0,
-    "upsell_rate_pct": 18.2,
-    "cross_sell_rate_pct": 60.6,
-    "avg_confidence_pct": 70.7
+    "total_predictions": 31,
+    "avg_predicted_clv": 284510.42,
+    "upsell_rate_pct": 38.7,
+    "cross_sell_rate_pct": 54.8,
+    "avg_confidence_pct": 74.20
   }
   ```
 
 ---
 
-#### 5. `GET /api/v1/clv/recent` — Recent Accounts Activity Feed
-* **Where & When it is used**:
-  * Used in the **Live Activity Table** or "Recently Processed Accounts" widget on the frontend dashboard.
-  * Allows team members to quickly jump to recently predicted clients.
-* **How it is used**:
-  * Send an HTTP `GET` request with an optional `limit` query parameter (default: 10, min: 1, max: 100).
-* **cURL Request Example**:
-  ```bash
-  curl -X GET "http://127.0.0.1:8000/api/v1/clv/recent?limit=5"
-  ```
-* **Response Body (`200 OK`)**:
-  ```json
-  [
-    {
-      "company_id": "909",
-      "industry_type": "Technology",
-      "predicted_clv_amount": 231329.59,
-      "upsell_opportunity_detected": 0,
-      "optimal_pitch_target_date": "2026-11-21",
-      "prediction_timestamp": "2026-10-15T10:56:37Z"
-    },
-    {
-      "company_id": "client-tech-001",
-      "industry_type": "Technology",
-      "predicted_clv_amount": 423671.66,
-      "upsell_opportunity_detected": 0,
-      "optimal_pitch_target_date": "2026-11-09",
-      "prediction_timestamp": "2026-10-15T10:00:32Z"
-    }
-  ]
-  ```
+### Backend & Frontend Integration Guide
 
----
-
-#### 6. `GET /health` — Service Liveness Probe
-* **Where & When it is used**:
-  * Used by **Docker, Kubernetes (Liveness/Readiness Probes), AWS ALB, or NGINX** to ensure the microservice is operational before routing incoming web traffic.
-  * Used by `clv_cli.py status` to confirm connectivity before executing interactive CLI commands.
-* **How it is used**:
-  * Send an HTTP `GET` request to `/health`.
-* **cURL Request Example**:
-  ```bash
-  curl -X GET "http://127.0.0.1:8000/health"
-  ```
-* **Response Body (`200 OK`)**:
-  ```json
-  {
-    "status": "ok",
-    "service": "CLV Prediction Engine",
-    "version": "2.0.0"
-  }
-  ```
-
-### 6.2 Architecture Integration: Frontend (MongoDB) & ML Microservice (SQLite)
-
-In standard production microservices architecture, the **Database-per-Service** pattern is followed:
-- **Frontend / Main Backend**: Can use MongoDB (or PostgreSQL/MySQL) to store users, client profiles, authentication, and core application state.
-- **AI/ML Microservice**: Uses local SQLite (`database/clv_predictions.db`) strictly for **internal audit logging and prediction tracking**.
-- **No Shared Database Needed**: The frontend never connects directly to SQLite. Communication is completely decoupled over HTTP/JSON.
-
-```text
-[ Frontend / Main App (Any PC) ]
-            │
-            │  1. Pulls client info from MongoDB
-            │  2. Sends JSON request via HTTP POST
-            ▼
-[ AI/ML Microservice (FastAPI on Port 8000) ]
-            │
-            │  3. Runs XGBoost + SHAP + Dynamic Timing
-            │  4. Saves audit record to SQLite (internal)
-            │  5. Returns structured JSON output
-            ▼
-[ Frontend / Main App (Any PC) ]
-            │
-            │  6. Saves CLV result into MongoDB & displays in UI
-```
-
-### 6.3 Cross-PC Network & CORS Configuration
-To allow a frontend on another computer on the local network (LAN) to connect:
-1. **Host Binding**: Start Uvicorn listening on `0.0.0.0`:
-   ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-2. **CORS Policy**: Configured in [`main.py`](main.py) with `CORSMiddleware` (`allow_origins=["*"]`) to prevent browser cross-origin blocks.
-3. **Endpoint URL**: The frontend should replace `localhost` with the ML host machine's LAN IP:
-   ```javascript
-   // Replace with actual IP of the machine running the ML microservice
-   const ML_API_URL = "http://192.168.1.10:8000/api/v1/clv/predict";
-   ```
-
-### 6.4 Integration Code Examples
-
-#### JavaScript / TypeScript (Frontend Integration)
-```javascript
-async function fetchAccountCLV(clientData) {
-  try {
-    const response = await fetch("http://192.168.1.10:8000/api/v1/clv/predict", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        company_id: clientData._id.toString(),
-        historical_spend_amount: clientData.totalSpend,
-        purchase_frequency_yearly: clientData.annualOrders,
-        industry_type: clientData.industry,
-        rolling_engagement_score: clientData.engagementScore,
-        contract_tenure_months: clientData.tenureMonths,
-        contract_start_date: clientData.contractStartDate // "YYYY-MM-DD"
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`CLV API Error: ${JSON.stringify(errorData)}`);
-    }
-
-    const clvResult = await response.json();
-    console.log("Predicted CLV:", clvResult.predicted_clv_amount);
-    return clvResult;
-  } catch (error) {
-    console.error("Failed to fetch CLV prediction:", error);
-  }
-}
-```
-
-#### Python Backend Integration
+#### Backend Integration (Python Service Example)
 ```python
-import requests
+import httpx
 
-payload = {
-    "company_id": "client-009",
-    "historical_spend_amount": 35000.0,
-    "purchase_frequency_yearly": 6,
-    "industry_type": "Finance",
-    "rolling_engagement_score": 82.0,
-    "contract_tenure_months": 20,
-    "contract_start_date": "2024-03-01"
+CLV_API_URL = "http://127.0.0.1:8000/api/v1/clv/predict"
+
+def fetch_client_clv_analytics(client_data: dict) -> dict:
+    """Fetch CLV and expansion intelligence from the microservice."""
+    with httpx.Client(timeout=5.0) as client:
+        response = client.post(CLV_API_URL, json=client_data)
+        response.raise_for_status()
+        return response.json()
+```
+
+#### Frontend Integration (React / TypeScript Example)
+```typescript
+interface ExpansionAnalytics {
+  upsell_opportunity_detected: boolean;
+  upsell_confidence_score: number;
+  recommended_target_product: string;
+  top_prediction_driver_reason: string;
 }
 
-response = requests.post("http://127.0.0.1:8000/api/v1/clv/predict", json=payload)
-data = response.json()
-print(f"CLV: ₹{data['predicted_clv_amount']:,.2f}")
-print(f"Upsell: {data['expansion_analytics']['recommended_target_product']}")
+interface CLVResponse {
+  company_id: string;
+  predicted_clv_amount: number;
+  confidence_interval_percentage: number;
+  expansion_analytics: ExpansionAnalytics;
+}
+
+export const formatINR = (amount: number): string => {
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)} Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)} L`;
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
+export const AccountCard = ({ data }: { data: CLVResponse }) => (
+  <div className="account-card">
+    <h3>{data.company_id}</h3>
+    <div className="clv-amount">{formatINR(data.predicted_clv_amount)}</div>
+    <span className="confidence">Confidence: {data.confidence_interval_percentage}%</span>
+    {data.expansion_analytics.upsell_opportunity_detected && (
+      <div className="badge upsell">
+        Upsell: {data.expansion_analytics.recommended_target_product}
+      </div>
+    )}
+    <p className="reason">{data.expansion_analytics.top_prediction_driver_reason}</p>
+  </div>
+);
 ```
 
 ---
 
-## 7. Dependencies & Setup
+## 7. Configuration & Environment Variables
 
-### 7.1 Requirements & Prerequisites
-- **Python**: Version `3.10` or higher (`3.12` recommended)
-- **Dependencies** (from `requirements.txt`):
-  - `fastapi>=0.111.0`
-  - `uvicorn[standard]>=0.29.0`
-  - `pydantic>=2.7.0`
-  - `pandas>=2.2.0`
-  - `numpy>=1.26.0`
-  - `scikit-learn>=1.4.0`
-  - `xgboost>=2.0.0`
-  - `shap>=0.45.0`
-  - `joblib>=1.4.0`
-  - `rich>=13.0.0`
-  - `httpx>=0.27.0`
-  - `pytest>=8.2.0`
+All business thresholds and persistence paths are configurable without altering code via environment variables in [app/config.py](app/config.py):
 
-### 7.2 Environment Configuration ([`app/config.py`](app/config.py))
-Configurable via system environment variables without code modification:
-
-| Variable | Default | Purpose |
+| Variable | Default Value | Description |
 | :--- | :--- | :--- |
-| `CLV_DB_PATH` | `database/clv_predictions.db` | Local SQLite database file path. |
-| `CLV_UPSELL_ENGAGEMENT_THRESHOLD` | `72.0` | Minimum engagement score required to trigger upsell. |
-| `CLV_UPSELL_TENURE_MONTHS_THRESHOLD` | `10` | Minimum tenure in months required for upsell. |
-| `CLV_UPSELL_ML_SCORE_THRESHOLD` | `0.60` | Minimum classifier probability floor for upsell. |
-| `CLV_CROSS_SELL_MIN_PURCHASE_FREQUENCY`| `3` | Minimum yearly purchase frequency for cross-sell. |
-| `CLV_CROSS_SELL_BASE_OFFSET_DAYS` | `45` | Base window days before behavioral adjustments. |
-| `CLV_CLAMP_FALLBACK_MULTIPLIER` | `9.0` | Fallback ceiling multiplier if industry profile missing. |
-
-### 7.3 Step-by-Step Installation & Run Instructions
-
-#### 1. Clone & Set Up Virtual Environment
-```bash
-# Ensure you are inside the ai-ml-microservice directory
-cd ai-ml-microservice
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-#### 2. Start the FastAPI Server
-```bash
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-Interactive API docs will be available at:
-- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-
-#### 3. Run the Production Terminal CLI
-Open a separate terminal window:
-```bash
-# Interactive Single Prediction
-python clv_cli.py predict
-
-# Output raw JSON
-python clv_cli.py predict --json
-
-# View Executive KPI Dashboard
-python clv_cli.py dashboard
-
-# View historical record of an account
-python clv_cli.py history client-tech-001
-
-# Run Visual Presentation Demo
-python demo_terminal.py
-```
-
-#### 4. (Optional) Retrain Model Artifacts
-Trained `.pkl` artifacts are pre-built in `models_registry/`. To regenerate synthetic data and retrain:
-```bash
-python generate_dataset.py
-python train_clv_model.py
-```
+| `CLV_UPSELL_ENGAGEMENT_THRESHOLD` | `72.0` | Minimum rolling engagement score required for upsell qualification. |
+| `CLV_UPSELL_TENURE_MONTHS_THRESHOLD` | `10` | Minimum active contract tenure (months) before an account can be upsold. |
+| `CLV_UPSELL_ML_SCORE_THRESHOLD` | `0.60` | Minimum `XGBClassifier` probability required to flag upsell. |
+| `CLV_CROSS_SELL_MIN_PURCHASE_FREQUENCY` | `3` | Minimum yearly purchase count required for cross-sell recommendations. |
+| `CLV_CROSS_SELL_BASE_OFFSET_DAYS` | `45` | Baseline calendar day offset before scheduling cross-sell pitches. |
+| `CLV_DRIFT_ENGAGEMENT_THRESHOLD_PCT` | `15.0` | Batch engagement deviation percentage that triggers drift warnings. |
+| `CLV_CLAMP_FALLBACK_MULTIPLIER` | `9.0` | Fallback multiplier cap when no industry-specific ceiling exists. |
+| `CLV_DB_PATH` | `database/clv_predictions.db` | File path for SQLite database persistence. |
 
 ---
 
-## 8. Error Handling & Validation
+## 8. Error Handling
 
-The microservice includes defensive validation at the network, schema, and model levels:
+The microservice incorporates resilient error handling to prevent pipeline downtime and ensure transparent feedback.
 
-| HTTP Code | Error Condition | Root Cause & Resolution |
+### HTTP Status Codes & Error Scenarios
+
+| Status Code | Error Condition | Root Cause | System Response |
+| :---: | :--- | :--- | :--- |
+| `422` | `Unprocessable Entity` | Pydantic validation failure (e.g., negative spend, invalid industry enum). | Returns detailed JSON listing failing field and constraint. |
+| `404` | `Not Found` | `GET /api/v1/clv/history/{company_id}` for an unregistered client ID. | Returns `{"detail": "No predictions found for company_id: ..."}`. |
+| `503` | `Service Unavailable` | Serialized model artifacts (`.pkl` or `.json`) missing from `models_registry/`. | Returns guidance instructing administrator to run `train_clv_model.py`. |
+| `500` | `Internal Server Error` | Unexpected mathematical exception during tree traversal. | Logs stack trace to server logger and returns clean generic 500 error. |
+
+### Failure Isolation & Defensive Design
+* **Non-Fatal Database Persistence**: Database write failures (e.g., lock contention or disk full) are caught and logged as warnings (`logger.warning("DB save failed (non-fatal)")`). The active prediction is **never dropped** and successfully returns to the caller.
+* **Batch Fault Tolerance**: When executing `POST /batch-predict`, an invalid row does not abort the entire batch; errors are logged per account while all valid rows complete.
+* **Data Drift Warnings**: The batch endpoint computes the mean engagement of the batch against the baseline `training_engagement_avg` ($65.82$). Deviations $> 15\%$ trigger a warning in logs encouraging model retraining.
+* **Zero-Division Guards**: All velocity and intensity calculations wrap `contract_tenure_months` in `max(tenure, 1)` and `spend` in `max(spend, 1)` to prevent division-by-zero exceptions.
+
+---
+
+## 9. Testing
+
+The project includes an automated test suite comprising **37 rigorous unit and property tests** across two test modules:
+* [tests/test_clv_math.py](tests/test_clv_math.py): Schema compliance, mathematical ranges, SHAP driver consistency, and upsell/cross-sell logic.
+* [tests/test_clv_outliers.py](tests/test_clv_outliers.py): Boundary conditions, zero-spend clamping, extreme engagement scores, and ceiling enforcement.
+
+### Key Edge Cases Verified
+
+| Test Case | Scenario / Condition | Expected Behavior |
 | :--- | :--- | :--- |
-| **`422 Unprocessable Entity`** | Invalid date format / Future date | `contract_start_date` must match `YYYY-MM-DD` and cannot be in the future. |
-| **`422 Unprocessable Entity`** | Invalid `industry_type` | Must match one of the 10 defined B2B enum strings exactly. |
-| **`422 Unprocessable Entity`** | Negative spend / tenure | `historical_spend_amount`, `contract_tenure_months`, and `purchase_frequency_yearly` must be $\ge 0$. |
-| **`503 Service Unavailable`** | Missing model artifacts | `models_registry/*.pkl` missing. Run `python train_clv_model.py` to compile. |
-| **`500 Internal Server Error`** | Unhandled prediction exception | Check server logs for stack trace; invalid mathematical values (e.g. NaN) are logged. |
+| `test_zero_spend_clv_is_zero` | `historical_spend_amount = 0.0` | Output CLV is strictly `0.0` (zero spend clamped). |
+| `test_zero_tenure_no_exception` | `contract_tenure_months = 0` | Passes without divide-by-zero; upsell strictly blocked. |
+| `test_ceiling_holds_all_industries` | Extremely high spend ($\ge ₹200,000$) | CLV is strictly $\le \text{spend} \times \text{industry\_ceiling}$. |
+| `test_zero_engagement_no_upsell` | `rolling_engagement_score = 0.0` | Upsell is blocked (`false`); cross-sell pitch window is extended. |
+| `test_max_engagement_timing_score_high` | `rolling_engagement_score = 100.0` | Timing confidence score scales up; pitch window accelerates. |
+| `test_pitch_date_minimum_7_days` | Cumulative negative offsets exceed baseline | Pitch date offset is capped at a minimum of 7 days into the future. |
+| `test_all_industries_no_exception` | Every supported `IndustryType` enum | Generates valid, finite positive CLV with populated product names. |
 
-### CLI Visual Alert Boxes
-When invalid inputs are entered interactively into `clv_cli.py`, the CLI traps the error and displays a structured error panel prompting for re-entry:
-```text
-┌────────────────────────── Date Validation Failed ───────────────────────────┐
-│ ❌ Invalid Date Format                                                      │
-│                                                                             │
-│ You entered: 2024-15-40                                                     │
-│ Expected format: YYYY-MM-DD (e.g. 2024-01-15).                              │
-│ Please enter a valid calendar date or press Enter to skip.                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 9. Testing & Quality Assurance
-
-The project contains automated unit and integration tests under [`tests/`](tests/) verifying mathematical consistency, schema integrity, and boundary conditions.
-
-### 9.1 Running the Test Suite
+### Running the Test Suite
 ```bash
+# Execute full pytest suite with verbose output:
 python -m pytest tests/ -v
-```
 
-### 9.2 Test Coverage Highlights
-- **Mathematical Correctness (`test_clv_math.py`)**:
-  - Validates `predicted_clv_amount` is always positive and finite.
-  - Confirms SHAP driver output integrity (top 3, correct signed direction).
-  - Verifies cross-sell pitch dates are valid future dates.
-  - Validates date parsing and raises validation errors on future or malformed dates.
-  - Tests prediction generation across all 10 industry verticals without exceptions.
-- **Outlier & Guardrail Tests (`test_clv_outliers.py`)**:
-  - **Zero Spend**: Ensures zero historical spend outputs ₹0 CLV without division-by-zero errors.
-  - **Zero Tenure**: Verifies accounts active for 0 months are handled gracefully.
-  - **Extreme Ceilings**: Validates 95th-percentile clamps hold even on multi-crore inputs.
-  - **Engagement Boundaries**: Tests 0.0 and 100.0 engagement score extremes.
+# Run with test coverage report:
+python -m pytest tests/ --cov=. --cov-report=term-missing
+```
 
 ---
 
 ## 10. Limitations & Future Improvements
 
-### 10.1 Known Limitations
-1. **Catalog Mapping**: Upsell tiers and cross-sell modules are mapped to static industry platform catalogs defined in `config.py`.
-2. **SQLite Concurrency**: The default SQLite database is suitable for single-instance microservice deployments. Under high concurrent write loads across multiple worker threads, write contention may occur.
-3. **Synthetic Training Baseline**: The default pre-trained model is calibrated against realistic synthetic distributions. For enterprise deployment, it should be retrained on 12–24 months of historical ERP/CRM transaction records.
+### Current Limitations
+1. **Single Currency Focus**: Calibrated exclusively in Indian Rupees (INR). Multi-national accounts in USD, EUR, or GBP must convert currencies prior to submission.
+2. **Synthetic Training Baseline**: The default pre-trained model is fitted on an industry-calibrated synthetic distribution (4,000 records). While mathematically realistic, optimal performance requires retraining on proprietary corporate billing data.
+3. **Point-in-Time Rolling Engagement**: The engagement score is currently provided as a point-in-time scalar ($0-100$). It does not yet automatically compute real-time decay from raw activity event logs.
+4. **SQLite Concurrency**: SQLite is optimized for lightweight local persistence and single-worker setups. High-concurrency enterprise deployments with multiple uvicorn workers require an external database.
 
-### 10.2 Future Improvements
-- [ ] **External RDBMS Integration**: Add configuration adapters for PostgreSQL or MongoDB for enterprise cloud audit stores.
-- [ ] **Real-time Event Streaming**: Ingest live webhook activity (e.g., from Segment or Mixpanel) to dynamically recalculate rolling engagement scores.
-- [ ] **Automated Feedback Loop**: Log actual customer renewal outcomes to automatically trigger model drift alerts and automated retraining pipelines.
-- [ ] **Multi-Currency Support**: Expand INR calculations to multi-currency conversions (USD, EUR, GBP) using real-time forex rates.
+### Future Improvements & Roadmap
+* [ ] **PostgreSQL / TimescaleDB Migration**: Replace SQLite with an enterprise SQL backend supporting pooled connections, read-replicas, and time-series trend queries.
+* [ ] **Multi-Currency Support**: Add native currency parameters with automated FX rate conversion.
+* [ ] **Event-Driven Recency Decay**: Connect `compute_rolling_engagement` directly to real event streams (e.g., Kafka / Segment) using half-life exponential decay formulas.
+* [ ] **Automated Continuous Retraining Pipeline**: Implement automated CRON retraining triggers that retrain models whenever data drift exceeds $20\%$.
+* [ ] **Webhook Integrations**: Add automated outbound webhooks to push high-confidence upsell alerts directly into Slack, Microsoft Teams, or CRM systems.
